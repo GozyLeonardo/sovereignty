@@ -1,0 +1,35 @@
+# Sovereignty — self-hosted voice + video stack.
+# Bring up the services your app depends on:
+#   docker compose up -d
+#
+# VoiceStudio (transcription + its own voice-cloning UI) is published on
+# loopback only for safety. LiveKit (WebRTC) publishes its RTC ports.
+
+services:
+  voicestudio:
+    image: ghcr.io/debpalash/voicestudio:stable
+    platform: linux/amd64
+    ports:
+      - "127.0.0.1:3900:3900"
+    environment:
+      OMNIVOICE_API_KEY: ${OMNIVOICE_API_KEY:?set OMNIVOICE_API_KEY in .env}
+      OMNIVOICE_SERVER_MODE: "1"
+    volumes:
+      - omnivoice-data:/app/omnivoice_data
+      - ${HOME:-/root}/.cache/huggingface:/root/.cache/huggingface
+    restart: unless-stopped
+
+  livekit:
+    image: livekit/livekit-server
+    command: --config /etc/livekit.yaml
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+      - "50000-50100:50000-50100/udp"
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml
+    restart: unless-stopped
+
+volumes:
+  omnivoice-data:
